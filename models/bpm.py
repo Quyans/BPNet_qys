@@ -15,7 +15,7 @@ ________________________,--._(___Y___)_,--._______________________
 import torch
 from torch import nn
 import MinkowskiEngine as ME
-from MinkowskiEngine.utils import get_coords_map
+from MinkowskiEngine.utils.coords import get_coords_map
 
 
 class Linking(nn.Module):

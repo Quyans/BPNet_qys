@@ -108,7 +108,7 @@ class MinkUNetBase(ResNetBase):
             self.PLANES[7],
             out_channels,
             kernel_size=1,
-            has_bias=True,
+            bias=True,
             dimension=D)
         self.relu = ME.MinkowskiReLU(inplace=True)
 

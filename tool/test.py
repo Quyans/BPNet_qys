@@ -2,7 +2,7 @@ import os
 import sys
 import random
 
-BASE_DIR = os.path.dirname("/qys/cuda10docker/BPNet-main/")
+BASE_DIR = os.path.dirname("/home/vr717/Documents/qys/code/NSEPN/BPNet_qys/metrics")
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR))
 
@@ -188,11 +188,14 @@ def validate(model, val_loader):
     model.eval()
     with torch.no_grad():
         store = 0.0
+        print("abcdefg0")
         for rep_i in range(args.test_repeats):
             preds = []
             gts = []
             for i, (coords, feat, label, inds_reverse) in enumerate(tqdm(val_loader)):
-                sinput = SparseTensor(feat.cuda(non_blocking=True), coords)
+                
+                print("abcdefg1")
+                sinput = SparseTensor(feat.cuda(non_blocking=True), coords.cuda())
                 predictions = model(sinput)
                 predictions_enlarge = predictions[inds_reverse, :]
                 if args.multiprocessing_distributed:
@@ -227,7 +230,7 @@ def test_cross_3d(model, val_data_loader):
             for i, (coords, feat, label_3d, color, label_2d, link, inds_reverse) in enumerate(val_data_loader):
                 if main_process():
                     pbar.update(1)
-                sinput = SparseTensor(feat.cuda(non_blocking=True), coords)
+                sinput = SparseTensor(feat.cuda(non_blocking=True), coords.cuda())
                 color, link = color.cuda(non_blocking=True), link.cuda(non_blocking=True)
                 label_3d, label_2d = label_3d.cuda(non_blocking=True), label_2d.cuda(non_blocking=True)
                 output_3d, output_2d = model(sinput, color, link)

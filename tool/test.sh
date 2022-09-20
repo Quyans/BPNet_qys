@@ -27,7 +27,9 @@ model_dir=${exp_dir}/model
 result_dir=${exp_dir}/result
 
 now=$(date +"%Y%m%d_%H%M%S")
-
+echo "fuck dir:"
+pwd
+echo "tool/${TEST_CODE}:"
 cp tool/test.sh tool/${TEST_CODE} ${exp_dir}
 mkdir -p ${result_dir}/last
 mkdir -p ${result_dir}/best
