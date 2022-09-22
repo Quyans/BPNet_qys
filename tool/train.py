@@ -190,7 +190,14 @@ def main_worker(gpu, ngpus_per_node, argss):
             if main_process():
                 logger.info("=> loading weight '{}'".format(args.weight))
             checkpoint = torch.load(args.weight)
-            model.load_state_dict(checkpoint['state_dict'])
+            # model.load_state_dict(checkpoint['state_dict'])
+            state_dict = checkpoint['state_dict']
+            from collections import OrderedDict
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                name = k[7:] # remove `module.`
+                new_state_dict[name] = v
+            model.load_state_dict(new_state_dict, strict=True)
             if main_process():
                 logger.info("=> loaded weight '{}'".format(args.weight))
         else:
@@ -203,7 +210,14 @@ def main_worker(gpu, ngpus_per_node, argss):
             # checkpoint = torch.load(args.resume)
             checkpoint = torch.load(args.resume, map_location=lambda storage, loc: storage.cuda())
             args.start_epoch = checkpoint['epoch']
-            model.load_state_dict(checkpoint['state_dict'], strict=True)
+            # model.load_state_dict(checkpoint['state_dict'], strict=True)
+            state_dict = checkpoint['state_dict']
+            from collections import OrderedDict
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                name = k[7:] # remove `module.`
+                new_state_dict[name] = v
+            model.load_state_dict(new_state_dict, strict=True)
             optimizer.load_state_dict(checkpoint['optimizer'])
             best_iou = checkpoint['best_iou']
             if main_process():
@@ -346,7 +360,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         # For some networks, making the network invariant to even, odd coords is important
         coords[:, :3] += (torch.rand(3) * 100).type_as(coords)
 
-        sinput = SparseTensor(feat.cuda(non_blocking=True), coords)
+        sinput = SparseTensor(feat.cuda(non_blocking=True), coords.cuda(non_blocking=True))
         label = label.cuda(non_blocking=True)
         output = model(sinput)
         # pdb.set_trace()
@@ -405,6 +419,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
 
     iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
     accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
+    # mIoU = np.mean(iou_class[union_meter.sum !=0])
+    # mAcc = np.mean(accuracy_class[union_meter.sum !=0])
     mIoU = np.mean(iou_class)
     mAcc = np.mean(accuracy_class)
     allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
@@ -445,8 +461,8 @@ def validate(val_loader, model, criterion):
 
     iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
     accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
-    mIoU = np.mean(iou_class)
-    mAcc = np.mean(accuracy_class)
+    mIoU = np.mean(iou_class[union_meter.sum!=0])
+    mAcc = np.mean(accuracy_class[union_meter.sum!=0])
     allAcc = sum(intersection_meter.sum) / (sum(target_meter.sum) + 1e-10)
     if main_process():
         logger.info(
@@ -597,7 +613,7 @@ def validate_cross(val_loader, model, criterion):
 
             if args.data_name == 'scannet_cross':
                 (coords, feat, label_3d, color, label_2d, link, inds_reverse) = batch_data
-                sinput = SparseTensor(feat.cuda(non_blocking=True), coords)
+                sinput = SparseTensor(feat.cuda(non_blocking=True), coords.cuda(non_blocking=True))
                 color, link = color.cuda(non_blocking=True), link.cuda(non_blocking=True)
                 label_3d, label_2d = label_3d.cuda(non_blocking=True), label_2d.cuda(non_blocking=True)
 
@@ -638,22 +654,21 @@ def validate_cross(val_loader, model, criterion):
 
     iou_class_3d = intersection_meter_3d.sum / (union_meter_3d.sum + 1e-10)
     accuracy_class_3d = intersection_meter_3d.sum / (target_meter_3d.sum + 1e-10)
-    mIoU_3d = np.mean(iou_class_3d)
-    mAcc_3d = np.mean(accuracy_class_3d)
+    mIoU_3d = np.mean(iou_class_3d[union_meter_3d.sum!=0])
+    mAcc_3d = np.mean(accuracy_class_3d[union_meter_3d.sum!=0])
     allAcc_3d = sum(intersection_meter_3d.sum) / (sum(target_meter_3d.sum) + 1e-10)
 
     iou_class_2d = intersection_meter_2d.sum / (union_meter_2d.sum + 1e-10)
     accuracy_class_2d = intersection_meter_2d.sum / (target_meter_2d.sum + 1e-10)
-    mIoU_2d = np.mean(iou_class_2d)
-    mAcc_2d = np.mean(accuracy_class_2d)
+    mIoU_2d = np.mean(iou_class_2d[union_meter_2d.sum!=0])
+    mAcc_2d = np.mean(accuracy_class_2d[union_meter_2d.sum!=0])
     allAcc_2d = sum(intersection_meter_2d.sum) / (sum(target_meter_2d.sum) + 1e-10)
 
     if main_process():
         logger.info(
-            'Val result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU_3d, mAcc_3d, allAcc_3d))
+            '3DVal result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}. 2DVal result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU_2d, mAcc_2d, allAcc_2d))
     return loss_meter_3d.avg, mIoU_3d, mAcc_3d, allAcc_3d, \
            loss_meter_2d.avg, mIoU_2d, mAcc_2d, allAcc_2d
-
 
 if __name__ == '__main__':
     main()

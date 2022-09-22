@@ -32,9 +32,9 @@ TRAIN:
   save_freq: 1
   save_path: Data/ScanNet
   weight:  Data/ScanNet/model/bpnet_5cm.pth.tar # path to initial weight (default: none)
-  resume: Data/ScanNet/model/model_last.pth.tar
-  evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
-  eval_freq: 1
+  resume: Data/ScanNet/model/
+  evaluate: true  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
+  eval_freq: 10
 #  zoom_factor: 8  # zoom factor for final prediction during training, be in [1, 2, 4, 8]
 #  train_h: 241
 #  train_w: 321
