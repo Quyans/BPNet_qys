@@ -25,6 +25,7 @@ for i, x in enumerate([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 24, 28, 33
 
 
 def f(fn):
+    print("111")
     fn2 = fn[:-3] + 'labels.ply'
     a = plyfile.PlyData().read(fn)
     v = np.array([list(x) for x in a.elements[0]])
@@ -41,17 +42,19 @@ files2 = sorted(glob.glob('PATH_OF_TRAIN/*_vh_clean_2.labels.ply'))
 assert len(files) == len(files2)
 '''
 
-files = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/scannetv2/scene0113_00/scene0113_00_vh_clean_2.ply'))
-files2 = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/scannetv2/scene0113_00/scene0113_00_vh_clean_2.labels.ply'))
-assert len(files) == len(files2)
+# files = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/scannetv2/scene0113_00/scene0113_00_vh_clean_2.ply'))
+# files2 = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/scannetv2/scene0113_00/scene0113_00_vh_clean_2.labels.ply'))
+# assert len(files) == len(files2)
 
-p = mp.Pool(processes=mp.cpu_count())
-p.map(f, files)
-p.close()
-p.join()
+# p = mp.Pool(processes=mp.cpu_count())
+# p.map(f, files)
+# p.close()
+# p.join()
 
-files = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/scannetv2/scene0241_00/scene0241_00_vh_clean_2.ply'))
-files2 = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/scannetv2/scene0241_00/scene0241_00_vh_clean_2.labels.ply'))
+# files = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/testtrain/*_vh_clean_2.ply'))
+# files2 = sorted(glob.glob('/qys/cuda10docker/BPNet-main/dataset/testtrain/*_vh_clean_2.labels.ply'))
+files = sorted(glob.glob('/home/vr717/Documents/qys/code/NSEPN/BPNet_qys/dataset/testtrain/*_vh_clean_2.ply'))
+files2 = sorted(glob.glob('/home/vr717/Documents/qys/code/NSEPN/BPNet_qys/dataset/testtrain/*_vh_clean_2.labels.ply'))
 assert len(files) == len(files2)
 print("fuck")
 p = mp.Pool(processes=mp.cpu_count())

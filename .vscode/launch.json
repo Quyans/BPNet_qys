@@ -13,6 +13,15 @@
             "justMyCode": true
         },
         {
+            "name": "Python: Current with cwd",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "/home/vr717/Documents/qys/code/NSEPN/BPNet_qys/Data/ScanNet_single241/val"
+        },
+        {
             "name": "Python: docker",
             "type": "python",
             "request": "launch",

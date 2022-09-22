@@ -17,11 +17,11 @@ export OMP_NUM_THREADS=${T}
 export KMP_INIT_AT_FORK=FALSE
 
 PYTHON=python
-dataset=scannet
+dataset=Data
 TRAIN_CODE=train.py
 TEST_CODE=test.py
 
-exp_dir=Exp/${dataset}/${exp_name}
+exp_dir=${dataset}/${exp_name}
 model_dir=${exp_dir}/model
 result_dir=${exp_dir}/result
 

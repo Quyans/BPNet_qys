@@ -14,15 +14,15 @@ TRAIN:
   layers_2d: 34
   arch_3d: MinkUNet18A
 
-  sync_bn_2d: True
+  sync_bn_2d: false
   ignore_label: 255
   train_gpu: [0]
-  workers: 16  # data loader workers
-  batch_size: 16  # batch size for training
-  batch_size_val: 16  # batch size for validation during training, memory and speed tradeoff
+  workers: 4  # data loader workers
+  batch_size: 4  # batch size for training
+  batch_size_val: 4  # batch size for validation during training, memory and speed tradeoff
   base_lr: 0.01
   loop: 5
-  epochs: 100
+  epochs: 2000
   start_epoch: 0
   power: 0.9
   momentum: 0.9
@@ -30,9 +30,9 @@ TRAIN:
   manual_seed: 1463
   print_freq: 10
   save_freq: 1
-  save_path:
-  weight:  # path to initial weight (default: none)
-  resume:
+  save_path: Data/ScanNet
+  weight:  Data/ScanNet/model/bpnet_5cm.pth.tar # path to initial weight (default: none)
+  resume: Data/ScanNet/model/model_last.pth.tar
   evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
   eval_freq: 1
 #  zoom_factor: 8  # zoom factor for final prediction during training, be in [1, 2, 4, 8]
@@ -51,7 +51,7 @@ Distributed:
 TEST:
   split: val  # split in [train, val and test]
   val_benchmark: True
-  test_workers: 4
+  test_workers: 1
   test_gpu: [0]
   test_batch_size: 4
   model_path: bpnet_5cm.pth.tar

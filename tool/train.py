@@ -15,7 +15,8 @@ import torch.utils.data
 import torch.multiprocessing as mp
 import torch.distributed as dist
 from tensorboardX import SummaryWriter
-
+import sys
+sys.path.append("/home/vr717/Documents/qys/code/NSEPN/BPNet_qys")
 from MinkowskiEngine import SparseTensor, CoordsManager
 from util import config
 from util.util import AverageMeter, intersectionAndUnionGPU, poly_learning_rate, save_checkpoint
@@ -475,7 +476,7 @@ def train_cross(train_loader, model, criterion, optimizer, epoch):
             # For some networks, making the network invariant to even, odd coords is important
             coords[:, 1:4] += (torch.rand(3) * 100).type_as(coords)
 
-            sinput = SparseTensor(feat.cuda(non_blocking=True), coords)
+            sinput = SparseTensor(feat.cuda(non_blocking=True), coords.cuda(non_blocking=True))
             color, link = color.cuda(non_blocking=True), link.cuda(non_blocking=True)
             label_3d, label_2d = label_3d.cuda(non_blocking=True), label_2d.cuda(non_blocking=True)
 
