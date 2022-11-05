@@ -102,7 +102,7 @@ def main():
     elif args.data_name == 'scannet_cross':
         from dataset.scanNetCross import ScanNetCross, collation_fn, collation_fn_eval_all
         _ = ScanNetCross(dataPathPrefix=args.data_root, voxelSize=args.voxelSize, split='train', aug=args.aug,
-                         memCacheInit=True, loop=args.loop)
+                         memCacheInit=True, loop=args.loop,eval_all = True)
         if args.evaluate:
             _ = ScanNetCross(dataPathPrefix=args.data_root, voxelSize=args.voxelSize, split='val', aug=False,
                              memCacheInit=True, eval_all=True)
@@ -248,13 +248,16 @@ def main_worker(gpu, ngpus_per_node, argss):
     elif args.data_name == 'scannet_cross':
         from dataset.scanNetCross import ScanNetCross, collation_fn, collation_fn_eval_all
         train_data = ScanNetCross(dataPathPrefix=args.data_root, voxelSize=args.voxelSize, split='train', aug=args.aug,
-                                  memCacheInit=True, loop=args.loop)
+                                  memCacheInit=True, loop=args.loop,eval_all=True) ##这里可以改
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_data) if args.distributed else None
         train_loader = torch.utils.data.DataLoader(train_data, batch_size=args.batch_size,
-                                                   shuffle=(train_sampler is None),
+                                                #    shuffle=(train_sampler is None),
+                                                    shuffle=False,
                                                    num_workers=args.workers, pin_memory=True, sampler=train_sampler,
                                                    drop_last=True, collate_fn=collation_fn,
                                                    worker_init_fn=worker_init_fn)
+        # for batch in train_loader:
+        #     print("INITIAL0!!!!:",batch[0].shape)
         if args.evaluate:
             val_data = ScanNetCross(dataPathPrefix=args.data_root, voxelSize=args.voxelSize, split='val', aug=False,
                                     memCacheInit=True, eval_all=True)
@@ -266,6 +269,8 @@ def main_worker(gpu, ngpus_per_node, argss):
     else:
         raise Exception('Dataset not supported yet'.format(args.data_name))
 
+    # for batch in train_loader:
+    #     print("INITIAL!!!!:",batch[0].shape)
     # ####################### Train ####################### #
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
@@ -320,7 +325,7 @@ def main_worker(gpu, ngpus_per_node, argss):
                     'state_dict': model.state_dict(),
                     'optimizer': optimizer.state_dict(),
                     'best_iou': best_iou
-                }, is_best, os.path.join(args.save_path, 'model')
+                }, is_best, os.path.join(args.save_path, 'model'),'epoch:{}'.format(epoch_log)
             )
     if main_process():
         writer.close()
@@ -343,6 +348,8 @@ def get_model(cfg):
 
 
 def train(train_loader, model, criterion, optimizer, epoch):
+    # for i,batch in enumerate(train_loader):
+    #     print("!!!!!!",batch[0].shape)
     torch.backends.cudnn.enabled = True
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -354,6 +361,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
     model.train()
     end = time.time()
     max_iter = args.epochs * len(train_loader)
+    # for i, batch_data in enumerate(train_loader):
+    #     print(batch_data[0].shape)
     for i, batch_data in enumerate(train_loader):
         data_time.update(time.time() - end)
         (coords, feat, label) = batch_data
@@ -470,7 +479,7 @@ def validate(val_loader, model, criterion):
     return loss_meter.avg, mIoU, mAcc, allAcc
 
 
-def train_cross(train_loader, model, criterion, optimizer, epoch):
+# def train_cross(train_loader, model, criterion, optimizer, epoch):
     # raise NotImplemented
     torch.backends.cudnn.enabled = True
     batch_time = AverageMeter()
@@ -484,6 +493,8 @@ def train_cross(train_loader, model, criterion, optimizer, epoch):
     model.train()
     end = time.time()
     max_iter = args.epochs * len(train_loader)
+    # for i, batch_data in enumerate(train_loader):
+    #     print(batch_data[0].shape)
     for i, batch_data in enumerate(train_loader):
         data_time.update(time.time() - end)
 
@@ -598,6 +609,139 @@ def train_cross(train_loader, model, criterion, optimizer, epoch):
                                                                                            mIoU_3d, mAcc_3d, allAcc_3d))
     return loss_meter_3d.avg, mIoU_3d, mAcc_3d, allAcc_3d, \
            loss_meter_2d.avg, mIoU_2d, mAcc_2d, allAcc_2d
+           
+def train_cross(train_loader, model, criterion, optimizer, epoch):
+    # raise NotImplemented
+    torch.backends.cudnn.enabled = True
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+
+    loss_meter, loss_meter_3d, loss_meter_2d = AverageMeter(), AverageMeter(), AverageMeter()
+    intersection_meter_3d, intersection_meter_2d = AverageMeter(), AverageMeter()
+    union_meter_3d, union_meter_2d = AverageMeter(), AverageMeter()
+    target_meter_3d, target_meter_2d = AverageMeter(), AverageMeter()
+
+    model.train()
+    end = time.time()
+    max_iter = args.epochs * len(train_loader)
+    # for i, batch_data in enumerate(train_loader):
+    #     print(batch_data[0].shape)
+    for i, batch_data in enumerate(train_loader):
+        data_time.update(time.time() - end)
+
+        if args.data_name == 'scannet_cross':
+            # (coords, feat, label_3d, color, label_2d, link) = batch_data
+            (coords, feat, label_3d, color, label_2d, link, inds_reverse) = batch_data
+            # For some networks, making the network invariant to even, odd coords is important
+            # coords[:, 1:4] += (torch.rand(3) * 100).type_as(coords)
+
+            sinput = SparseTensor(feat.cuda(non_blocking=True), coords.cuda(non_blocking=True))
+            color, link = color.cuda(non_blocking=True), link.cuda(non_blocking=True)
+            label_3d, label_2d = label_3d.cuda(non_blocking=True), label_2d.cuda(non_blocking=True)
+
+            output_3d, output_2d = model(sinput, color, link)
+            output_3d = output_3d[inds_reverse, :]
+            # pdb.set_trace()
+            loss_3d = criterion(output_3d, label_3d)
+            loss_2d = criterion(output_2d, label_2d)
+            loss = loss_3d + args.weight_2d * loss_2d
+        else:
+            raise NotImplemented
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # ############ 3D ############ #
+        output_3d = output_3d.detach().max(1)[1]
+        intersection, union, target = intersectionAndUnionGPU(output_3d, label_3d.detach(), args.classes,
+                                                              args.ignore_label)
+        intersection, union, target = intersection.cpu().numpy(), union.cpu().numpy(), target.cpu().numpy()
+        intersection_meter_3d.update(intersection)
+        union_meter_3d.update(union)
+        target_meter_3d.update(target)
+        accuracy_3d = sum(intersection_meter_3d.val) / (sum(target_meter_3d.val) + 1e-10)
+        # ############ 2D ############ #
+        output_2d = output_2d.detach().max(1)[1]
+        intersection, union, target = intersectionAndUnionGPU(output_2d, label_2d.detach(), args.classes,
+                                                              args.ignore_label)
+        intersection, union, target = intersection.cpu().numpy(), union.cpu().numpy(), target.cpu().numpy()
+        intersection_meter_2d.update(intersection)
+        union_meter_2d.update(union)
+        target_meter_2d.update(target)
+        accuracy_2d = sum(intersection_meter_2d.val) / (sum(target_meter_2d.val) + 1e-10)
+
+        loss_meter.update(loss.item(), args.batch_size)
+        loss_meter_2d.update(loss_2d.item(), args.batch_size)
+        loss_meter_3d.update(loss_3d.item(), args.batch_size)
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # Adjust lr
+        current_iter = epoch * len(train_loader) + i + 1
+        current_lr = poly_learning_rate(args.base_lr, current_iter, max_iter, power=args.power)
+        # if args.arch == 'cross_p5' or args.arch == 'cross_p2':
+        for index in range(0, args.index_split):
+            optimizer.param_groups[index]['lr'] = current_lr
+        for index in range(args.index_split, len(optimizer.param_groups)):
+            optimizer.param_groups[index]['lr'] = current_lr * 10
+        # else:
+        #     for param_group in optimizer.param_groups:
+        #         param_group['lr'] = current_lr
+
+        # calculate remain time
+        remain_iter = max_iter - current_iter
+        remain_time = remain_iter * batch_time.avg
+        t_m, t_s = divmod(remain_time, 60)
+        t_h, t_m = divmod(t_m, 60)
+        remain_time = '{:02d}:{:02d}:{:02d}'.format(int(t_h), int(t_m), int(t_s))
+
+        if (i + 1) % args.print_freq == 0 and main_process():
+            logger.info('Epoch: [{}/{}][{}/{}] '
+                        'Data {data_time.val:.3f} ({data_time.avg:.3f}) '
+                        'Batch {batch_time.val:.3f} ({batch_time.avg:.3f}) '
+                        'Remain {remain_time} '
+                        'Loss {loss_meter.val:.4f} '
+                        'Accuracy {accuracy:.4f}.'.format(epoch + 1, args.epochs, i + 1, len(train_loader),
+                                                          batch_time=batch_time, data_time=data_time,
+                                                          remain_time=remain_time,
+                                                          loss_meter=loss_meter_3d,
+                                                          accuracy=accuracy_3d))
+        if main_process():
+            writer.add_scalar('loss_train_batch', loss_meter.val, current_iter)
+            writer.add_scalar('loss3d_train_batch', loss_meter_3d.val, current_iter)
+            writer.add_scalar('loss2d_train_batch', loss_meter_2d.val, current_iter)
+            writer.add_scalar('mIoU3d_train_batch', np.mean(intersection_meter_3d.val / (union_meter_3d.val + 1e-10)),
+                              current_iter)
+            writer.add_scalar('mAcc3d_train_batch', np.mean(intersection_meter_3d.val / (target_meter_3d.val + 1e-10)),
+                              current_iter)
+            writer.add_scalar('allAcc3d_train_batch', accuracy_3d, current_iter)
+
+            writer.add_scalar('mIoU2d_train_batch', np.mean(intersection_meter_2d.val / (union_meter_2d.val + 1e-10)),
+                              current_iter)
+            writer.add_scalar('mAcc2d_train_batch', np.mean(intersection_meter_2d.val / (target_meter_2d.val + 1e-10)),
+                              current_iter)
+            writer.add_scalar('allAcc2d_train_batch', accuracy_2d, current_iter)
+
+            writer.add_scalar('learning_rate', current_lr, current_iter)
+
+    iou_class_3d = intersection_meter_3d.sum / (union_meter_3d.sum + 1e-10)
+    accuracy_class_3d = intersection_meter_3d.sum / (target_meter_3d.sum + 1e-10)
+    mIoU_3d = np.mean(iou_class_3d)
+    mAcc_3d = np.mean(accuracy_class_3d)
+    allAcc_3d = sum(intersection_meter_3d.sum) / (sum(target_meter_3d.sum) + 1e-10)
+
+    iou_class_2d = intersection_meter_2d.sum / (union_meter_2d.sum + 1e-10)
+    accuracy_class_2d = intersection_meter_2d.sum / (target_meter_2d.sum + 1e-10)
+    mIoU_2d = np.mean(iou_class_2d)
+    mAcc_2d = np.mean(accuracy_class_2d)
+    allAcc_2d = sum(intersection_meter_2d.sum) / (sum(target_meter_2d.sum) + 1e-10)
+
+    if main_process():
+        logger.info(
+            'Train result at epoch [{}/{}]: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(epoch + 1, args.epochs,
+                                                                                           mIoU_3d, mAcc_3d, allAcc_3d))
+    return loss_meter_3d.avg, mIoU_3d, mAcc_3d, allAcc_3d, \
+           loss_meter_2d.avg, mIoU_2d, mAcc_2d, allAcc_2d
 
 
 def validate_cross(val_loader, model, criterion):
@@ -610,7 +754,6 @@ def validate_cross(val_loader, model, criterion):
     model.eval()
     with torch.no_grad():
         for i, batch_data in enumerate(val_loader):
-
             if args.data_name == 'scannet_cross':
                 (coords, feat, label_3d, color, label_2d, link, inds_reverse) = batch_data
                 sinput = SparseTensor(feat.cuda(non_blocking=True), coords.cuda(non_blocking=True))
@@ -666,7 +809,7 @@ def validate_cross(val_loader, model, criterion):
 
     if main_process():
         logger.info(
-            '3DVal result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}. 2DVal result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU_2d, mAcc_2d, allAcc_2d))
+            '3DVal result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}. 2DVal result: mIoU/mAcc/allAcc {:.4f}/{:.4f}/{:.4f}.'.format(mIoU_3d,mAcc_3d,allAcc_3d,mIoU_2d, mAcc_2d, allAcc_2d))
     return loss_meter_3d.avg, mIoU_3d, mAcc_3d, allAcc_3d, \
            loss_meter_2d.avg, mIoU_2d, mAcc_2d, allAcc_2d
 

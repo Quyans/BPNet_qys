@@ -135,6 +135,7 @@ class ScanNetCross(ScanNet3D):
         feats_in = SA.attach("shm://wbhu_scannet_3d_%s_%06d_feats_%08d" % (self.split, self.identifier, index))
         labels_in = SA.attach("shm://wbhu_scannet_3d_%s_%06d_labels_%08d" % (self.split, self.identifier, index))
 
+        
         colors, labels_2d, links = self.get_2d(index, locs_in)
 
         locs = self.prevoxel_transforms(locs_in) if self.aug else locs_in
@@ -161,6 +162,8 @@ class ScanNetCross(ScanNet3D):
                     links: Nx4xV(1,H,W,mask) Tensor
         """
         frames_path = self.data2D_paths[room_id]
+        #frames_path 是這個場景的训练集所有图片 对于scannet241是100帧
+        # print(room_id)
         partial = int(len(frames_path) / self.VIEW_NUM)
         imgs, labels, links = [], [], []
         for v in range(self.VIEW_NUM):
@@ -195,27 +198,52 @@ class ScanNetCross(ScanNet3D):
         return imgs, labels, links
 
 
+# def collation_fn(batch):
+#     """
+#     :param batch:
+#     :return:    coords: N x 4 (batch,x,y,z)
+#                 feats:  N x 3
+#                 labels: N
+#                 colors: B x C x H x W x V
+#                 labels_2d:  B x H x W x V
+#                 links:  N x 4 x V (B,H,W,mask)
+
+#     """
+#     coords, feats, labels, colors, labels_2d, links = list(zip(*batch))
+#     # pdb.set_trace()
+
+#     for i in range(len(coords)):
+#         coords[i][:, 0] *= i
+#         links[i][:, 0, :] *= i
+
+#     return torch.cat(coords), torch.cat(feats), torch.cat(labels), \
+#            torch.stack(colors), torch.stack(labels_2d), torch.cat(links)
+
 def collation_fn(batch):
     """
     :param batch:
-    :return:    coords: N x 4 (batch,x,y,z)
+    :return:    coords: N x 4 (x,y,z,batch)
                 feats:  N x 3
                 labels: N
                 colors: B x C x H x W x V
                 labels_2d:  B x H x W x V
                 links:  N x 4 x V (B,H,W,mask)
+                inds_recons:ON
 
     """
-    coords, feats, labels, colors, labels_2d, links = list(zip(*batch))
+    coords, feats, labels, colors, labels_2d, links, inds_recons = list(zip(*batch))
+    inds_recons = list(inds_recons)
     # pdb.set_trace()
 
+    accmulate_points_num = 0
     for i in range(len(coords)):
         coords[i][:, 0] *= i
         links[i][:, 0, :] *= i
+        inds_recons[i] = accmulate_points_num + inds_recons[i]
+        accmulate_points_num += coords[i].shape[0]
 
     return torch.cat(coords), torch.cat(feats), torch.cat(labels), \
-           torch.stack(colors), torch.stack(labels_2d), torch.cat(links)
-
+           torch.stack(colors), torch.stack(labels_2d), torch.cat(links), torch.cat(inds_recons)
 
 def collation_fn_eval_all(batch):
     """

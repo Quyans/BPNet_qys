@@ -35,7 +35,9 @@ dataset/scannetv2_images
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
-
+Minkowski*
+dataset/scannetv2*
+dataset/testtrain
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

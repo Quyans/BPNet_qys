@@ -147,6 +147,12 @@ def sparse_quantize(coords,
         else:
             return discrete_coords[inds], feats[inds], filtered_labels
     else:
+        #  arr = [1,2,6,4,2,3,2]
+        # return_index为true
+        # u, indices,inds_reverse = np.unique(arr,return_index=True, return_inverse=True)
+        # u = [1,2,3,4,6]
+        # indices = [0,1,5,3,2]
+        # inds_reverse = [0 1 4 3 1 2 1]
         _, inds, inds_reverse = np.unique(key, return_index=True, return_inverse=True)
         if return_index:
             return inds, inds_reverse

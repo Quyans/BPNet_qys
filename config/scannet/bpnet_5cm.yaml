@@ -1,6 +1,6 @@
 DATA:
   data_name: scannet_cross
-  data_root: ./Data/ScanNet
+  data_root: ./Data/ScanNet046
   classes: 20
   aug: True
   voxelSize: 0.05
@@ -17,7 +17,7 @@ TRAIN:
   sync_bn_2d: false
   ignore_label: 255
   train_gpu: [0]
-  workers: 4  # data loader workers
+  workers: 0  # data loader workers
   batch_size: 4  # batch size for training
   batch_size_val: 4  # batch size for validation during training, memory and speed tradeoff
   base_lr: 0.01
@@ -29,12 +29,12 @@ TRAIN:
   weight_decay: 0.0001
   manual_seed: 1463
   print_freq: 10
-  save_freq: 1
+  save_freq: 5
   save_path: Data/ScanNet
-  weight:  Data/ScanNet/model/bpnet_5cm.pth.tar # path to initial weight (default: none)
-  resume: Data/ScanNet/model/
+  weight:  Data/ScanNet046/model/bpnet_5cm.pth.tar # path to initial weight (default: none)
+  resume: Data/ScanNet046/model/
   evaluate: true  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend
-  eval_freq: 10
+  eval_freq: 1
 #  zoom_factor: 8  # zoom factor for final prediction during training, be in [1, 2, 4, 8]
 #  train_h: 241
 #  train_w: 321

@@ -133,7 +133,7 @@ class BPNet(nn.Module):
         links_current_level[:, 1:3, :] = ((H - 1.) / (h - 1.) * links_current_level[:, 1:3, :].float()).int()
         fused_3d_p2, fused_2d_p2 = self.linker_p2(p2, feat_3d, links_current_level, init_3d_data=sparse_3d)
 
-        feat_3d = self.layer8_3d(ME.cat(fused_3d_p2, out_b1p2))
+        feat_3d = self.layer8_3d(ME.cat(fused_3d_p2, out_b1p2))      #84456,96
 
         # Res
         # pdb.set_trace()

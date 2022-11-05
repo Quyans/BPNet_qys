@@ -16,6 +16,8 @@ import torch
 from torch import nn
 import MinkowskiEngine as ME
 from MinkowskiEngine.utils.coords import get_coords_map
+# from MinkowskiEngine.utils.coords import 
+from MinkowskiEngine.MinkowskiCoordinateManager import CoordinateManager
 
 
 class Linking(nn.Module):
@@ -61,6 +63,8 @@ class Linking(nn.Module):
         feat_2d_all = feat_2d_all.view(self.viewNum, -1, C, H, W)
 
         # Link
+        
+        # coords_map_in, coords_map_out = init_3d_data.coordinate_manager.stride_map(init_3d_data, feat_3d)
         coords_map_in, coords_map_out = get_coords_map(init_3d_data, feat_3d)
         current_links = torch.zeros([feat_3d.shape[0], links.shape[1], links.shape[2]], dtype=torch.long).cuda()
         current_links[coords_map_out, :] = links[coords_map_in, :]

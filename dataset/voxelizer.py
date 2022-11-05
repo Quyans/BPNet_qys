@@ -60,6 +60,7 @@ class Voxelizer:
                         theta = np.random.uniform(*rot_bound)
                     rot_mats.append(M(axis, theta))
                 # Use random order
+                # 我的修改,原本就是shuffle
                 np.random.shuffle(rot_mats)
                 rot_mat = rot_mats[0] @ rot_mats[1] @ rot_mats[2]
             else:
@@ -72,6 +73,34 @@ class Voxelizer:
         np.fill_diagonal(voxelization_matrix[:3, :3], scale)
         # Get final transformation matrix.
         return voxelization_matrix, rotation_matrix
+        
+        
+        # rot_mat = np.eye(3)
+        # if self.use_augmentation and self.rotation_augmentation_bound is not None:
+        #     if isinstance(self.rotation_augmentation_bound, collections.Iterable):
+        #         rot_mats = []
+        #         for axis_ind, rot_bound in enumerate(self.rotation_augmentation_bound):
+        #             theta = 0
+        #             axis = np.zeros(3)
+        #             axis[axis_ind] = 1
+        #             if rot_bound is not None:
+        #                 theta = 0.5
+        #             rot_mats.append(M(axis, theta))
+        #         # Use random order
+        #         # 我的修改,原本就是shuffle
+        #         # np.random.shuffle(rot_mats)
+        #         rot_mat = rot_mats[0] @ rot_mats[1] @ rot_mats[2]
+        #     else:
+        #         raise ValueError()
+        # rotation_matrix[:3, :3] = rot_mat
+        # # 2. Scale and translate to the voxel space.
+        # scale = 1 / self.voxel_size
+        # if self.use_augmentation and self.scale_augmentation_bound is not None:
+        #     # scale *= np.random.uniform(*self.scale_augmentation_bound)
+        #     scale*=1
+        # np.fill_diagonal(voxelization_matrix[:3, :3], scale)
+        # # Get final transformation matrix.
+        # return voxelization_matrix, rotation_matrix
 
     def clip(self, coords, center=None, trans_aug_ratio=None):
         bound_min = np.min(coords, 0).astype(float)
@@ -106,7 +135,7 @@ class Voxelizer:
                 if labels is not None:
                     labels = labels[clip_inds]
 
-        # Get rotation and scale
+        # Get rotation and scale 从这里开始这里每次调用不一样，导致后面的不一样
         M_v, M_r = self.get_transformation_matrix()
         # Apply transformations
         rigid_transformation = M_v

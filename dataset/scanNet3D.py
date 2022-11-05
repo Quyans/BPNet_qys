@@ -108,6 +108,8 @@ class ScanNet3D(data.Dataset):
             ]
             self.input_transforms = t.Compose(input_transforms)
 
+        test = torch.load(self.data_paths[0])
+
         if memCacheInit and (not exists("/dev/shm/wbhu_scannet_3d_%s_%06d_locs_%08d" % (split, identifier, 0))):
             print('[*] Starting shared memory init ...')
             for i, (locs, feats, labels) in enumerate(torch.utils.data.DataLoader(
