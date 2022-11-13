@@ -2,7 +2,7 @@ import os
 import sys
 import random
 
-BASE_DIR = os.path.dirname("/home/vr717/Documents/qys/code/NSEPN/BPNet_qys/metrics")
+BASE_DIR = os.path.dirname("/home/vr717/Documents/qys/code/NSEPN_ori/BPNet_qys/metrics")
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR))
 
@@ -27,8 +27,37 @@ from util.util import AverageMeter, intersectionAndUnionGPU
 from tqdm import tqdm
 from tool.train import get_model 
 
+from torchvision import transforms
+import imageio
+from PIL import Image
+
 cv2.ocl.setUseOpenCL(False)
 cv2.setNumThreads(0)
+
+
+colordict = {
+    0:[174,198,232],
+    1:[151,223,137],
+    2:[31,120,180],
+    3:[255,188,120],
+    4:[188,189,35],
+    5:[140,86,74],
+    6:[255,152,151],
+    7:[213,39,40],
+    8:[196,176,213],
+    9:[148,103,188],
+    10:[196,156,148],
+    11:[23,190,208],
+    12:[247,183,210],
+    13:[218,219,141],
+    14:[254,127,14],
+    15:[227,119,194],
+    16:[158,218,229],
+    17:[43,160,45],
+    18:[112,128,144],
+    19:[82,83,163],
+    255:[255,255,170]    
+}
 
 
 def worker_init_fn(worker_id):
@@ -241,6 +270,35 @@ def test_cross_3d(model, val_data_loader):
                     dist.all_reduce(output_2d)
 
                 output_2d = output_2d.detach().max(1)[1]
+                args.save_folder
+
+                savePath = os.path.join(args.save_folder,"pred_2d/") 
+                if not os.path.exists(savePath):
+                    os.mkdir(savePath)      
+
+                for i in range(args.viewNum):
+                    pre2d = output_2d[0,...,i].cpu().numpy()
+                    pre2dmat = []
+                    for row in  pre2d:
+                        tem = []
+                        for label in row:
+                            tem.append(colordict[label])
+                        pre2dmat.append(tem)
+                    pre2dImg = transforms.ToPILImage()(torch.tensor(pre2dmat).permute(2,0,1).float())
+                    Image.Image.save(pre2dImg,os.path.join(savePath,"{}_{}view_pred.jpg".format(rep_i,i)))
+
+                    # savePath
+                    gt2d = label_2d[0,...,i].cpu().numpy()
+                    gt2dmat = []
+                    for row in  gt2d:
+                        tem = []
+                        for label in row:
+                            tem.append(colordict[label])
+                        gt2dmat.append(tem)
+                    label2d_Img = transforms.ToPILImage()(torch.tensor(gt2dmat).permute(2,0,1).float())
+                    Image.Image.save(label2d_Img,os.path.join(savePath,"{}_{}view_gt.jpg".format(rep_i,i)))
+                
+
                 intersection, union, target = intersectionAndUnionGPU(output_2d, label_2d.detach(), args.classes,
                                                                       args.ignore_label)
                 intersection, union, target = intersection.cpu().numpy(), union.cpu().numpy(), target.cpu().numpy()
