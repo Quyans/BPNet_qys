@@ -1,6 +1,6 @@
 DATA:
   data_name: scannet_cross
-  data_root: ./Data/ScanNet046
+  data_root: ./Data/ScanNet_single241_fk
   classes: 20
   aug: True
   voxelSize: 0.05

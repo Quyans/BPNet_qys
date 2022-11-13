@@ -2,7 +2,7 @@ import os
 import sys
 import random
 
-BASE_DIR = os.path.dirname("/home/vr717/Documents/qys/code/NSEPN/BPNet_qys/metrics")
+BASE_DIR = os.path.dirname("/home/vr717/Documents/qys/code/NSEPN_ori/BPNet_qys/metrics")
 ROOT_DIR = BASE_DIR
 sys.path.append(os.path.join(ROOT_DIR))
 
@@ -30,6 +30,30 @@ from tool.train import get_model
 cv2.ocl.setUseOpenCL(False)
 cv2.setNumThreads(0)
 
+
+colordict = {
+    0:[151,223,137],
+    1:[174,198,232],
+    2:[31,120,180],
+    3:[255,188,120],
+    4:[188,189,35],
+    5:[140,86,74],
+    6:[255,152,151],
+    7:[213,39,40],
+    8:[196,176,213],
+    9:[148,103,188],
+    10:[196,156,148],
+    11:[23,190,208],
+    12:[247,183,210],
+    13:[218,219,141],
+    14:[254,127,14],
+    15:[227,119,194],
+    16:[158,218,229],
+    17:[43,160,45],
+    18:[112,128,144],
+    19:[82,83,163],
+    255:[255,255,170]    
+}
 
 def worker_init_fn(worker_id):
     random.seed(1463 + worker_id)
@@ -102,11 +126,11 @@ def main():
     if args.data_name == 'scannet_3d_mink':
         from dataset.scanNet3D import ScanNet3D, collation_fn_eval_all
         _ = ScanNet3D(dataPathPrefix=args.data_root, voxelSize=args.voxelSize, split='val', aug=False,
-                      memCacheInit=True, eval_all=True, identifier=6797)
+                      memCacheInit=True, eval_all=True, identifier=241)
     elif args.data_name == 'scannet_cross':
         from dataset.scanNetCross import ScanNetCross, collation_fn, collation_fn_eval_all
         _ = ScanNetCross(dataPathPrefix=args.data_root, voxelSize=args.voxelSize, split='val', aug=False,
-                         memCacheInit=True, eval_all=True, identifier=6797, val_benchmark=args.val_benchmark)
+                         memCacheInit=True, eval_all=True, identifier=241, val_benchmark=args.val_benchmark)
 
     if args.multiprocessing_distributed:
         args.world_size = args.ngpus_per_node * args.world_size
@@ -167,7 +191,7 @@ def main_worker(gpu, ngpus_per_node, argss):
     elif args.data_name == 'scannet_cross':
         from dataset.scanNetCross import ScanNetCross, collation_fn_eval_all
         val_data = ScanNetCross(dataPathPrefix=args.data_root, voxelSize=args.voxelSize, split='val', aug=False,
-                                memCacheInit=True, eval_all=True, identifier=6797, val_benchmark=args.val_benchmark)
+                                memCacheInit=True, eval_all=True, identifier=46, val_benchmark=args.val_benchmark)
         val_sampler = None
         val_loader = torch.utils.data.DataLoader(val_data, batch_size=args.test_batch_size,
                                                  shuffle=False, num_workers=args.test_workers, pin_memory=True,
@@ -219,6 +243,24 @@ def test_cross_3d(model, val_data_loader):
     union_meter = AverageMeter()
     target_meter = AverageMeter()
 
+    show_points_label=True
+    if show_points_label:
+        pth_dir = "/home/vr717/Documents/qys/code/NSEPN_ori/BPNet_qys/Data/ScanNet046/train/scene0046_00_vh_clean_2.pth"
+        points = torch.tensor(torch.load(pth_dir)[0])
+
+
+    
+    pred_colors = []
+    
+    
+    # for i in pred:
+    #     if  i!=2:
+    #         print(i)
+    # pred =torch.t( torch.Tensor(pred))
+    # matrix =  torch.cat((points,torch.Tensor(pred_colors)),dim=1)
+    # np.savetxt(r'A.txt', matrix, fmt='%f', delimiter=',')
+    # print(0)
+    
     with torch.no_grad():
         model.eval()
         store = 0.0
@@ -253,10 +295,24 @@ def test_cross_3d(model, val_data_loader):
             gt = torch.cat(gts)
             pred = torch.cat(preds)
             if rep_i == 0:
-                np.save(join(args.save_folder, 'gt.npy'), gt.numpy())
-            store = pred + store
-            mIou_3d = iou.evaluate(store.max(1)[1].numpy(), gt.numpy())
-            np.save(join(args.save_folder, 'pred.npy'), store.max(1)[1].numpy())
+                # np.save(join(args.save_folder, 'gt.npy'), gt.numpy())
+                gt_colors = []
+                gt_np = gt.cpu().numpy()
+                for ind in range(len(gt_np)):
+                    pred_colors.append(colordict[gt_np[ind]])
+                matrix =  torch.cat((points,torch.Tensor(gt_colors)),dim=1)
+                np.savetxt(os.path.join(args.save_folder,'gtpoints.txt'), matrix, fmt='%f', delimiter=' ')
+            # store = pred + store
+            # mIou_3d = iou.evaluate(store.max(1)[1].numpy(), gt.numpy())
+            mIou_3d = iou.evaluate(pred.max(1)[1].numpy(), gt.numpy())
+            # np.save(join(args.save_folder, '{}pred.npy'.format(rep_i)), store.max(1)[1].numpy())
+            
+            pred_label = pred.max(1)[1].numpy()
+            pred_colors = []
+            for ind in range(len(pred_label)):
+                pred_colors.append(colordict[pred_label[ind]])
+            matrix =  torch.cat((points,torch.Tensor(pred_colors)),dim=1)
+            np.savetxt(os.path.join(args.save_folder,'pred_points{}.txt'.format(rep_i)), matrix, fmt='%f', delimiter=' ')
 
             iou_class = intersection_meter.sum / (union_meter.sum + 1e-10)
             # accuracy_class = intersection_meter.sum / (target_meter.sum + 1e-10)
