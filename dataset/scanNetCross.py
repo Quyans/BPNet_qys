@@ -72,7 +72,7 @@ class LinkCreator(object):
 
 class ScanNetCross(ScanNet3D):
     VIEW_NUM = 3
-    IMG_DIM = (320, 240)
+    IMG_DIM = (640, 480)
 
     def __init__(self, dataPathPrefix='Data', voxelSize=0.05,
                  split='train', aug=False, memCacheInit=False,
