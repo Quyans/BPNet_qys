@@ -98,7 +98,7 @@ class ResNet(nn.Module):
     def __init__(self, block, layers, num_classes=1000, deep_base=True):
         super(ResNet, self).__init__()
         self.deep_base = deep_base
-        if not self.deep_base:
+        if not self.deep_base:#true
             self.inplanes = 64
             self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
             self.bn1 = BatchNorm(64)

@@ -1,9 +1,9 @@
 DATA:
   data_name: scannet_cross
-  data_root: ./Data/ScanNet24102_640480
-  # data_root: ./Data/ScanNet24102
+  # data_root: ./Data/ScanNet24102_640480
+  data_root: ./Data/scanNet01300
   classes: 20
-  aug: True
+  aug: False #True
   voxelSize: 0.05
 
 
@@ -31,9 +31,9 @@ TRAIN:
   manual_seed: 1463
   print_freq: 10
   save_freq: 1
-  save_path: Data/ScanNet24102_640480
-  # save_path: Data/ScanNet24102
-  weight:  Data/ScanNet24102_640480/model/bpnet_5cm.pth.tar # path to initial weight (default: none)
+  # save_path: Data/ScanNet24102_640480
+  save_path: Data/scanNet01300
+  weight:  Data/scanNet01300/model/bpnet_5cm.pth.tar # path to initial weight (default: none)
   # weight:  Data/ScanNet24102/model/bpnet_5cm.pth.tar # path to initial weight (default: none)
   resume: 
   evaluate: True  # evaluate on validation set, extra gpu memory needed and small batch_size_val is recommend

@@ -37,10 +37,20 @@ def adjust_intrinsic(intrinsic, intrinsic_image_dim, image_dim):
 
 class LinkCreator(object):
     def __init__(self, fx=577.870605, fy=577.870605, mx=319.5, my=239.5, image_dim=(320, 240), voxelSize=0.05):
+    # def __init__(self, fx=1028, fy=1028, mx=640, my=580, image_dim=(320, 240), voxelSize=0.05):
         self.intricsic = make_intrinsic(fx=fx, fy=fy, mx=mx, my=my)
+        # self.intricsic = adjust_intrinsic(self.intricsic, intrinsic_image_dim=[640, 480], image_dim=image_dim)
         self.intricsic = adjust_intrinsic(self.intricsic, intrinsic_image_dim=[640, 480], image_dim=image_dim)
         self.imageDim = image_dim
         self.voxel_size = voxelSize
+
+    # 原bpnet
+    
+    # def __init__(self, fx=577.870605, fy=577.870605, mx=319.5, my=239.5, image_dim=(320, 240), voxelSize=0.05):
+    #     self.intricsic = make_intrinsic(fx=fx, fy=fy, mx=mx, my=my)
+    #     self.intricsic = adjust_intrinsic(self.intricsic, intrinsic_image_dim=[640, 480], image_dim=image_dim)
+    #     self.imageDim = image_dim
+    #     self.voxel_size = voxelSize
 
     def computeLinking(self, camera_to_world, coords, depth):
         """
@@ -72,6 +82,7 @@ class LinkCreator(object):
 
 class ScanNetCross(ScanNet3D):
     VIEW_NUM = 3
+    # IMG_DIM = (1295, 967)
     IMG_DIM = (320, 240)
 
     def __init__(self, dataPathPrefix='Data', voxelSize=0.05,
@@ -115,7 +126,7 @@ class ScanNetCross(ScanNet3D):
         mean = [item * value_scale for item in mean]
         std = [0.229, 0.224, 0.225]
         std = [item * value_scale for item in std]
-        if self.aug:
+        if self.aug: #false
             self.transform_2d = t_2d.Compose([
                 t_2d.RandomGaussianBlur(),
                 t_2d.Crop([self.IMG_DIM[1] + 1, self.IMG_DIM[0] + 1], crop_type='rand', padding=mean,
@@ -124,8 +135,10 @@ class ScanNetCross(ScanNet3D):
                 t_2d.Normalize(mean=mean, std=std)])
         else:
             self.transform_2d = t_2d.Compose([
-                t_2d.Crop([self.IMG_DIM[1] + 1, self.IMG_DIM[0] + 1], crop_type='rand', padding=mean,
-                          ignore_label=255),
+
+                #注释by me
+                # t_2d.Crop([self.IMG_DIM[1] + 1, self.IMG_DIM[0] + 1], crop_type='rand', padding=mean,
+                #           ignore_label=255),
                 t_2d.ToTensor(),
                 t_2d.Normalize(mean=mean, std=std)])
 
@@ -183,6 +196,16 @@ class ScanNetCross(ScanNet3D):
             # pdb.set_trace()
             link = np.ones([coords.shape[0], 4], dtype=np.int)
             link[:, 1:4] = self.linkCreator.computeLinking(pose, coords, depth)
+            # count = 0
+            # tem = [1,0,0,0]
+            # for item in link:
+            #     for index in range(len(tem)):
+            #         if item[index] == tem[index]:
+            #             continue
+            #         else:
+            #             count = count+1
+            #             break
+                 
             img, label = self.transform_2d(img, label)
             imgs.append(img)
             labels.append(label)

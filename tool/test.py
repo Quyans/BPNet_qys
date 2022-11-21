@@ -282,7 +282,7 @@ def test_cross_3d(model, val_data_loader):
                     for row in  pre2d:
                         tem = []
                         for label in row:
-                            tem.append(colordict[label])
+                            tem.append(np.array(colordict[label])/255)
                         pre2dmat.append(tem)
                     pre2dImg = transforms.ToPILImage()(torch.tensor(pre2dmat).permute(2,0,1).float())
                     Image.Image.save(pre2dImg,os.path.join(savePath,"{}_{}view_pred.jpg".format(rep_i,i)))
@@ -293,7 +293,7 @@ def test_cross_3d(model, val_data_loader):
                     for row in  gt2d:
                         tem = []
                         for label in row:
-                            tem.append(colordict[label])
+                            tem.append(np.array(colordict[label])/255)
                         gt2dmat.append(tem)
                     label2d_Img = transforms.ToPILImage()(torch.tensor(gt2dmat).permute(2,0,1).float())
                     Image.Image.save(label2d_Img,os.path.join(savePath,"{}_{}view_gt.jpg".format(rep_i,i)))

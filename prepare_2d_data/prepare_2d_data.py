@@ -37,7 +37,7 @@ parser.add_argument('--output_path', required=True, help='where to output 2d dat
 parser.add_argument('--export_label_images', dest='export_label_images', action='store_true')
 parser.add_argument('--label_type', default='label-filt', help='which labels (label or label-filt)')
 parser.add_argument('--frame_skip', type=int, default=20, help='export every nth frame')
-parser.add_argument('--label_map_file', default='/qys/cuda10docker/BPNet-main/data_src/scannetv2-labels.combined.tsv',
+parser.add_argument('--label_map_file', default='/home/vr717/Documents/qys/code/NSEPN_ori/BPNet_qys/prepare_2d_data/scannetv2-labels.combined.tsv',
                     help='path to scannetv2-labels.combined.tsv (required for label export only)')
 parser.add_argument('--output_image_width', type=int, default=320, help='export image width')
 parser.add_argument('--output_image_height', type=int, default=240, help='export image height')
